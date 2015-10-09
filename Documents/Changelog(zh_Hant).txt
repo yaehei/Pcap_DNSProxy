@@ -1,76 +1,8 @@
-﻿Pcap_DNSProxy v0.4.4.1 更新日誌(2015-10-07)：
+﻿Pcap_DNSProxy v0.4.2.1(Windows/Linux/Mac) 更新日誌(2015-06-07)：
 
-* 添加對 SOCKS 版本 4/4a/5 請求的原生支援
-* 添加 DNSCurve Reliable/Unreliable Socket Timeout 參數，增強對不同協定超時設定的精細化控制
-* 修正抓包模組的工作條件 [軒轅無雙]
-
-
--------------------------------------------------------------------------------
-
-
-Pcap_DNSProxy v0.4.3.1-0.4.4 更新日誌(2015-09-27)：
-
-* 添加 Client Ephemeral Key 一次性用戶端金鑰組功能，增強 DNSCurve 協定傳輸資料的安全性 [DNSCrypt]
-* 添加對設定檔部分參數的自動刷新功能，具體受支援的參數參見說明文檔 [jedisct1/icylogic]
-* 添加 Local Protocol 參數用於指定請求境內伺服器時所使用的協定組合 [muink]
-* 添加對十六進位 DNSCurve/DNSCrypt 協定 Magic Number 參數的支援 [BiliBbb]
-* 增強 DNSCurve Protocol 參數對協定組合的支援
-* 增強 NULL 擴展 Hosts 白名單功能的支援，現在可以指定只對部分 DNS 類型生效
-* 添加對 BIND 9.2.0 之後版本清除 DNS 緩存的命令 (Linux) [hongyi-zhao]
-* 修正 Local Main 模式生效時對 Local Hosts 清單的讀取策略 [c1024/gaoyan1234]
-* 修正 Receive Waiting 參數的含義以及對請求行為的影響
-* 修正 Local Hosts 參數啟用時解析功能變數名稱的流程，提高已緩存解析結果的解析速度 [hongyi-zhao]
-* 修正對並行請求的數量限制
-* 修復部分參數讀取使用網路層服務名/DNS記錄名稱代替數位時的錯誤
-* 修復多執行緒模式下伺服器連接失敗時無法切換的問題
-* 修復 TCP 協定請求時可能造成的分片問題
-* 修復 ICMP/ICMPv6 附加資料長度的計算問題
-* 修復 32 位系統對 IPv4/IPv6 位址轉換的錯誤 (Windows Vista+) [Nine Forty/fabe004]
-* 修復 ICMP/ICMPv6 通訊端參數在預設情況下造成 Ping 功能不正常的問題 (Linux/Mac)
-* 修復啟用 TCP 協定時 Local 請求造成程式崩潰的問題 (Linux/Mac)
-* 修復 Additional Path 參數讀取不完全的問題 (Linux/Mac)
-* 修復不啟用 TCP Fast Open 時發送請求可能會出現的問題 (Linux)
-* 修復重新讀取 IPFilter 和 Hosts 檔時的順序問題
-* 修復部分情況下不輸出 Error.log 檔的錯誤 (Linux/Mac) [hongyi-zhao]
-* 移除清除 DNS 緩存失敗時錯誤訊息的輸出，此消息對運行沒有影響 [Syrone Wong]
-
-
--------------------------------------------------------------------------------
-
-
-Pcap_DNSProxy v0.4.2.1-v0.4.3 更新日誌(2015-07-28)：
-
-* Hosts Only 參數現在更名為 Direct Request 並支援指定 IPv4 或 IPv6 功能
-* 添加不同協定的 Direct Request 功能 [AVC A]
-* 添加 Pcap Devices Blacklist 參數，可指定不對含有此名稱的網路介面卡進行抓包
 * 添加限制請求數量的功能
 * 添加 DNS 壓縮指標檢查功能，避免接受格式錯誤的資料包
-* 添加遺漏的 DNS 投毒污染黑名單位址
-* 添加對 Unicode 標準包含的所有換行以及空格類別格式的支援
-* 添加對 TCP Fast Open 的支援(Linux)
-* 添加 --disable-daemon 參數，可控制程式是否以 Daemon 守護進程的方式運行(Linux)
-* 添加完整的 ASCII/UTF-8/UTF-16(LE/BE)/UTF-32(LE/BE) 編碼支援
-* 調整抓包模組為回檔模式降低資源的佔用
-* 調整抓包模組工作模式，避免 WinPcap 與 cFosSpeed 之間的衝突 [軒轅無雙]
 * 優化優先指定網路層協定功能
-* 優化對大小寫敏感字元的讀取
-* 優化對 Hosts 和 Local Hosts 的讀取和檢測 [yuyangzxw/gaoyan1234]
-* 修復抓包模組非 Ethernet 和 Apple IEEE 1394/FireWire 設備的錯誤識別
-* 修復資料包過濾模組的演算法錯誤 [AVC A]
-* 修復檔讀取模組對於前後留空的錯誤 [wen kangcheng]
-* 修復檔讀取模組對於多重空格處理的問題 [yuyangzxw]
-* 修復 KeyPairGenerator 生成用戶端金鑰組的錯誤 [wongsyrone]
-* 修復 Accept List 參數讀取 DNS 類型名稱的錯誤 [wongsyrone]
-* 修復 Address Hosts 功能溢出錯誤 [jzp820927]
-* 修復當請求的資料中帶有 EDNS Label 時的錯誤 [wongsyrone]
-* 修復收到截斷數據包時無法重新按照標準適用 TCP 協議重新解析的錯誤 [shuangzhijinghua]
-* 修復睡眠或休眠前可能產生的錯誤報表輸出(Windows)
-  * 啟動第一次遇到 Insufficient privileges or not any available network devices 錯誤資訊時將暫時不輸出到錯誤報表檔
-  * 移除 An error occurred in XXX 錯誤資訊
-* 終端視窗也將輸出錯誤資訊
-  * 運行在非 Daemon 守護進程模式下的終端視窗時(Linux)
-  * 任何時候(Mac)
-* 移除服務管理批次處理的強制管理員許可權請求(Windows) [5sq]
 
 
 -------------------------------------------------------------------------------

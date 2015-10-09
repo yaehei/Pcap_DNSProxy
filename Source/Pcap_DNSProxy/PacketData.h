@@ -21,4 +21,3 @@
 
 //Global variables
 extern CONFIGURATION_TABLE Parameter;
-extern GLOBAL_STATUS GlobalRunningStatus;

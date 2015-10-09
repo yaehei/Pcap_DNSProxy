@@ -21,5 +21,5 @@
 
 //Global variables
 extern CONFIGURATION_TABLE Parameter;
-extern GLOBAL_STATUS GlobalRunningStatus;
+extern time_t StartTime;
 extern std::mutex ErrorLogLock;

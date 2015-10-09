@@ -276,15 +276,6 @@
     <ClInclude Include="PacketData.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Platform.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Structures.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Proxy.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="WinPcap\Packet_x64.lib">
@@ -355,9 +346,6 @@
     <ClCompile Include="ReadParameter.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Proxy.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Pcap_DNSProxy.rc">
@@ -420,9 +408,6 @@
     </Text>
     <Text Include="..\Documents\ReadMe_Mac(zh_Hant).txt">
       <Filter>Documents</Filter>
-    </Text>
-    <Text Include="CMakeLists.txt">
-      <Filter>源文件</Filter>
     </Text>
   </ItemGroup>
 </Project>

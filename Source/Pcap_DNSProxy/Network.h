@@ -21,7 +21,6 @@
 
 //Global variables
 extern CONFIGURATION_TABLE Parameter;
-extern GLOBAL_STATUS GlobalRunningStatus;
 extern ALTERNATE_SWAP_TABLE AlternateSwapList;
 #if defined(ENABLE_PCAP)
 	extern std::deque<OUTPUT_PACKET_TABLE> OutputPacketList;
@@ -29,24 +28,5 @@ extern ALTERNATE_SWAP_TABLE AlternateSwapList;
 #endif
 
 //Functions
-bool __fastcall SelectTargetSocket(
-	SOCKET_DATA *TargetSocketData, 
-	bool *&IsAlternate, 
-	size_t *&AlternateTimeoutTimes, 
-	const uint16_t Protocol, 
-	const bool IsLocal);
-bool __fastcall SelectTargetSocketMulti(
-	std::vector<SOCKET_DATA> &TargetSocketDataList, 
-	const uint16_t Protocol);
-SSIZE_T __fastcall SelectingResult(
-	uint16_t Protocol, 
-	std::vector<SOCKET_DATA> &SocketDataList, 
-	std::vector<SOCKET_SELECTING_DATA> &SocketSelectingList, 
-	PSTR OriginalRecv, 
-	const size_t RecvSize, 
-	const bool IsLocal, 
-	const bool NoCheck);
-void __fastcall MarkPortToList(
-	const uint16_t Protocol, 
-	const SOCKET_DATA *LocalSocketData, 
-	std::vector<SOCKET_DATA> &SocketDataList);
+bool __fastcall SelectTargetSocket(SOCKET_DATA *SockData, bool *&IsAlternate, size_t *&AlternateTimeoutTimes, const uint16_t Protocol, const bool IsLocal);
+bool __fastcall SelectTargetSocketMulti(std::vector<SOCKET_DATA> &SockDataList, const uint16_t Protocol);

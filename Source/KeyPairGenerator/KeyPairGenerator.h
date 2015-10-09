@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////
 // Operating system
 // 
-/* This code is from Qt source, which in qglobal.h header file.
+/* This code is from Qt source, which is in qglobal.h header file.
 // See https://www.qt.io/developers
 
 	The operating system, must be one of: (PLATFORM_x)
@@ -72,7 +72,7 @@
 #elif defined(__OS2__)
 #  if defined(__EMX__)
 #    define PLATFORM_OS2EMX
-#  else 
+#  else
 #    define PLATFORM_OS2
 #  endif
 #elif !defined(SAG_COM) && (defined(WIN64) || defined(_WIN64) || defined(__WIN64__))
@@ -124,7 +124,7 @@
 #  define PLATFORM_DYNIX
 #elif defined(_SCO_DS)                   /* SCO OpenServer 5 + GCC */
 #  define PLATFORM_SCO
-#elif defined(__USLC__)                  /* All SCO platforms + UDK or OUDK */
+#elif defined(__USLC__)                  /* all SCO platforms + UDK or OUDK */
 #  define PLATFORM_UNIXWARE
 #  define PLATFORM_UNIXWARE7
 #elif defined(__svr4__) && defined(i386) /* Open UNIX 8 + GCC */
@@ -135,7 +135,7 @@
 #  error "Qt has not been ported to this OS - talk to qt-bugs@trolltech.com"
 #endif
 
-//System series definitions
+//System series defines
 #if defined(PLATFORM_WIN32) || defined(PLATFORM_WIN64)
 #  define PLATFORM_WIN
 #endif
@@ -147,7 +147,7 @@
 #elif !defined(PLATFORM_UNIX)
 #  define PLATFORM_UNIX
 #endif
-/* Apple Mac OS X XCode support
+/* XCode support
 #if defined(PLATFORM_MACX)
 #  ifdef MAC_OS_X_VERSION_MIN_REQUIRED
 #    undef MAC_OS_X_VERSION_MIN_REQUIRED
@@ -167,7 +167,7 @@
 */
 
 //////////////////////////////////////////////////
-// Base Header
+// Base header
 // 
 #if (defined(PLATFORM_WIN) || defined(PLATFORM_MACX))
 	#define ENABLE_LIBSODIUM       //LibSodium is always enable on Windows and Mac OS X.
@@ -207,13 +207,12 @@
 
 
 //////////////////////////////////////////////////
-// Base definitions
+// Base defines
 // 
 #pragma pack(1)                        //Memory alignment: 1 bytes/8 bits
 #define KEYPAIR_MESSAGE_LEN    80U     //Keypair messages length
-#define KEYPAIR_INTERVAL       4U
 
-//ASCII values definitions
+//ASCII values defines
 #define ASCII_LF               10      //"␊"
 #define ASCII_DLE              16      //"␐"
 #define ASCII_COLON            58      //":"
@@ -227,9 +226,6 @@
 	#define fwprintf_s         fwprintf
 #endif
 
-// Function definitions
-#define crypto_box_keypair crypto_box_curve25519xsalsa20poly1305_keypair
-
 //Functions
-void __fastcall CaseConvert(const bool IsLowerToUpper, PSTR Buffer, const size_t Length);
+size_t __fastcall BinaryToHex(PSTR Buffer, const size_t MaxLength, const unsigned char *Binary, const size_t Length);
 #endif

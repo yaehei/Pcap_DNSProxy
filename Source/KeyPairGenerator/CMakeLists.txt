@@ -18,11 +18,7 @@
 
 
 # CMake minimum version
-IF(PLATFORM_OPENWRT)
-	cmake_minimum_required(VERSION 2.8.12.2)
-ELSE(PLATFORM_OPENWRT)
-	cmake_minimum_required(VERSION 3.0.2)
-ENDIF(PLATFORM_OPENWRT)
+cmake_minimum_required(VERSION 3.0.2)
 
 # Project name
 project(KeyPairGenerator)
@@ -36,23 +32,15 @@ set(GENERATOR_SRC_DIR
 		"KeyPairGenerator.cpp")
 
 # Compiling and linking flags
-IF(PLATFORM_OPENWRT)
-	add_definitions(-std=c++11)
-	add_definitions(-DPLATFORM_OPENWRT)
-ELSE(PLATFORM_OPENWRT)
-	add_definitions(-std=c++11 -fpic)
-ENDIF(PLATFORM_OPENWRT)
+add_definitions(-std=c++11 -fpic)
 IF(ENABLE_LIBSODIUM)
 	add_definitions(-DENABLE_LIBSODIUM)
 ENDIF(ENABLE_LIBSODIUM)
 
 # Executable file name
 add_executable(KeyPairGenerator ${GENERATOR_SRC_DIR})
-IF(PLATFORM_OPENWRT)
-	INSTALL(TARGETS KeyPairGenerator RUNTIME DESTINATION sbin)
-ENDIF(PLATFORM_OPENWRT)
 
-# Libraries linking
+# Static libraries
 IF(ENABLE_LIBSODIUM)
 	target_link_libraries(KeyPairGenerator sodium)
 ENDIF(ENABLE_LIBSODIUM)
