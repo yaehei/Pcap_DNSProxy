@@ -22,31 +22,41 @@
 //Global variables
 extern CONFIGURATION_TABLE Parameter;
 extern GLOBAL_STATUS GlobalRunningStatus;
-extern ALTERNATE_SWAP_TABLE AlternateSwapList;
-#if defined(ENABLE_PCAP)
-	extern std::deque<OUTPUT_PACKET_TABLE> OutputPacketList;
-	extern std::mutex OutputPacketListLock;
-#endif
 
 //Functions
-bool __fastcall SelectTargetSocket(
-	SOCKET_DATA *TargetSocketData, 
-	bool *&IsAlternate, 
-	size_t *&AlternateTimeoutTimes, 
-	const uint16_t Protocol, 
-	const bool IsLocal);
-bool __fastcall SelectTargetSocketMulti(
-	std::vector<SOCKET_DATA> &TargetSocketDataList, 
-	const uint16_t Protocol);
-SSIZE_T __fastcall SelectingResult(
-	uint16_t Protocol, 
-	std::vector<SOCKET_DATA> &SocketDataList, 
-	std::vector<SOCKET_SELECTING_DATA> &SocketSelectingList, 
+SSIZE_T __fastcall SOCKSSocketSelecting(
+	SYSTEM_SOCKET Socket, 
+	fd_set *ReadFDS, 
+	fd_set *WriteFDS, 
+	timeval *Timeout, 
+	const char *SendBuffer, 
+	const size_t SendSize, 
 	PSTR OriginalRecv, 
 	const size_t RecvSize, 
-	const bool IsLocal, 
-	const bool NoCheck);
-void __fastcall MarkPortToList(
+	const size_t MinLen);
+bool __fastcall SOCKSSelectionExchange(
+	SOCKET_DATA *SOCKSSocketData, 
+	fd_set *ReadFDS, 
+	fd_set *WriteFDS, 
+	timeval *Timeout, 
+	PSTR SendBuffer, 
+	PSTR OriginalRecv, 
+	const size_t RecvSize);
+bool __fastcall SOCKSAuthenticationUsernamePassword(
+	SYSTEM_SOCKET Socket, 
+	fd_set *ReadFDS, 
+	fd_set *WriteFDS, 
+	timeval *Timeout, 
+	PSTR SendBuffer, 
+	PSTR OriginalRecv, 
+	const size_t RecvSize);
+bool __fastcall SOCKSClientCommandRequest(
 	const uint16_t Protocol, 
-	const SOCKET_DATA *LocalSocketData, 
-	std::vector<SOCKET_DATA> &SocketDataList);
+	SYSTEM_SOCKET Socket, 
+	fd_set *ReadFDS, 
+	fd_set *WriteFDS, 
+	timeval *Timeout, 
+	PSTR SendBuffer, 
+	PSTR OriginalRecv, 
+	const size_t RecvSize, 
+	PSOCKET_DATA UDP_ASSOCIATE_TCP_Connecting_Address);

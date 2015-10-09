@@ -1,8 +1,9 @@
 ﻿[Local Hosts]
-## China Mainland Domains
-## Get the latest database: https://github.com/xinhugo/Free-List/blob/master/White_List.txt
-## Report an Issue: https://github.com/xinhugo/Free-List/issues
-## Last update: 2015-05-01
+## China mainland domains
+## Get the latest database: https://github.com/xinhugo/Free-List/blob/master/WhiteList.txt
+## Report an issue: https://github.com/xinhugo/Free-List/issues
+## Last update: 2015-09-27
+
 .*\.cn
 .*\b0056\.cc
 .*\b009k\.net
@@ -887,6 +888,7 @@
 .*\bblued\.us
 .*\bblueidea\.com
 .*\bbluekai\.com
+.*\bbluereader\.org
 .*\bblueskystudy\.com
 .*\bblufans\.com
 .*\bblyun\.com
@@ -1345,7 +1347,6 @@
 .*\bdj97\.com
 .*\bdjtz\.net
 .*\bdkdiy\.net
-.*\bdl\.google\.com
 .*\bdlmdj\.com
 .*\bdm08\.com
 .*\bdm5\.com
@@ -1435,6 +1436,7 @@
 .*\bdzwww\.net
 .*\be0575\.com
 .*\be3ol\.com
+.*\beach\.fm
 .*\beacha\.com
 .*\beapoo\.com
 .*\beapoo\.net
@@ -1530,6 +1532,7 @@
 .*\bevergreat888\.com
 .*\bevget\.com
 .*\bew9z\.com
+.*\beweiqi\.com
 .*\bewen\.cc
 .*\bewtang\.com
 .*\bexam8\.com
@@ -2248,6 +2251,7 @@
 .*\bjinjianginns\.com
 .*\bjinrong800\.com
 .*\bjinshagu\.com
+.*\bjinshuju\.net
 .*\bjinti\.com
 .*\bjiqie\.com
 .*\bjisuba\.com
@@ -2465,6 +2469,7 @@
 .*\blandtu\.com
 .*\blangxi\.org
 .*\blangyeweb\.com
+.*\blanke\.cc
 .*\blanou3g\.com
 .*\blanree\.com
 .*\blanrenzhijia\.com
@@ -3263,6 +3268,7 @@
 .*\brrs\.com
 .*\brr-sc\.com
 .*\brrvpn\.com
+.*\brtbasia\.com
 .*\brtbidder\.net
 .*\brthkj\.com
 .*\bruanko\.com
@@ -3701,6 +3707,7 @@
 .*\btotoolaw\.com
 .*\btouthe\.com
 .*\btoutiao\.com
+.*\btowords\.com
 .*\btpooo\.com
 .*\btqun\.com
 .*\btrademessenger\.com
@@ -3880,6 +3887,7 @@
 .*\bvsharing\.com
 .*\bvv60\.com
 .*\bvxinyou\.com
+.*\bvyun\.com
 .*\bwabigong\.com
 .*\bwacai\.com
 .*\bwaerfa\.com
@@ -4450,6 +4458,7 @@
 .*\bzhenren\.com
 .*\bzhezhixueyuan\.com
 .*\bzhi\.hu
+.*\bzhibimo\.com
 .*\bzhibo8\.cc
 .*\bzhihu\.com
 .*\bzhijinwang\.com

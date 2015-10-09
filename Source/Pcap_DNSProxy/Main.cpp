@@ -21,15 +21,14 @@
 
 //The Main function of program
 #if defined(PLATFORM_WIN)
-int wmain(int argc, wchar_t* argv[])
+int wmain(
+	int argc, 
+	wchar_t* argv[])
 {
-//Windows XP with SP3 support
-	#if (defined(PLATFORM_WIN32) && !defined(PLATFORM_WIN64))
-		GetFunctionPointer(FUNCTION_GETTICKCOUNT64);
-		GetFunctionPointer(FUNCTION_INET_NTOP);
-	#endif
 #elif (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
-int main(int argc, char *argv[])
+int main(
+	int argc, 
+	char *argv[])
 {
 #endif
 
@@ -43,52 +42,67 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-//Read configuration file and WinPcap or LibPcap initialization.
-	if (!ReadParameter())
+//Read configuration file.
+	if (!ReadParameter(true))
 	{
 		WSACleanup();
 		return EXIT_FAILURE;
 	}
 
-//Mark Local DNS address to PTR Records.
-	std::thread NetworkInformationMonitorThread(NetworkInformationMonitor);
-	NetworkInformationMonitorThread.detach();
-
-//Read IPFilter and Hosts.
-	if (Parameter.OperationMode == LISTEN_MODE_CUSTOM || Parameter.BlacklistCheck || Parameter.LocalRouting)
-	{
-		std::thread IPFilterThread(ReadIPFilter);
-		IPFilterThread.detach();
-	}
-
-	std::thread HostsThread(ReadHosts);
-	HostsThread.detach();
-
 //DNSCurve initialization
 #if defined(ENABLE_LIBSODIUM)
-	if (Parameter.DNSCurve && DNSCurveParameter.IsEncryption)
+	if (Parameter.DNSCurve)
 	{
-		randombytes_set_implementation(&randombytes_salsa20_implementation);
-		randombytes_stir();
-		DNSCurveInit();
+		DNSCurveParameterModificating.SetToMonitorItem();
+
+	//Libsodium initialization
+		if (sodium_init() != EXIT_SUCCESS)
+		{
+			PrintError(LOG_ERROR_DNSCURVE, L"Libsodium initialization error", 0, nullptr, 0);
+
+			WSACleanup();
+			return EXIT_FAILURE;
+		}
+
+	//Encryption mode initialization
+		if (DNSCurveParameter.IsEncryption)
+		{
+			randombytes_set_implementation(&randombytes_salsa20_implementation);
+			randombytes_stir();
+			DNSCurveInit();
+		}
 	}
 #endif
 
+//Mark Local DNS address to PTR Records, read Parameter(Monitor mode), IPFilter and Hosts.
+	ParameterModificating.SetToMonitorItem();
+	std::thread NetworkInformationMonitorThread(NetworkInformationMonitor);
+	std::thread ReadParameterThread(ReadParameter, false);
+	std::thread ReadHostsThread(ReadHosts);
+	NetworkInformationMonitorThread.detach();
+	ReadParameterThread.detach();
+	ReadHostsThread.detach();
+	
+	if (Parameter.OperationMode == LISTEN_MODE_CUSTOM || Parameter.DataCheck_Blacklist || Parameter.LocalRouting)
+	{
+		std::thread ReadIPFilterThread(ReadIPFilter);
+		ReadIPFilterThread.detach();
+	}
+
 #if defined(PLATFORM_WIN)
 //Service initialization and start service.
-	SERVICE_TABLE_ENTRYW ServiceTable[] = {{DEFAULT_LOCAL_SERVICE_NAME, (LPSERVICE_MAIN_FUNCTIONW)ServiceMain}, {nullptr, nullptr}};
+	SERVICE_TABLE_ENTRYW ServiceTable[]{{SYSTEM_SERVICE_NAME, (LPSERVICE_MAIN_FUNCTIONW)ServiceMain}, {nullptr, nullptr}};
 	if (!StartServiceCtrlDispatcherW(ServiceTable))
 	{
-		Parameter.Console = true;
+		GlobalRunningStatus.Console = true;
 		wprintf_s(L"System Error: Service start error, error code is %lu.\n", GetLastError());
 		wprintf_s(L"System Error: Program will continue to run in console mode.\n");
-		wprintf_s(L"Please ignore those error messages if you want to run in console mode.\n");
+		wprintf_s(L"Please ignore these error messages if you want to run in console mode.\n");
 
 	//Handle the system signal and start all monitors.
 		SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
 		MonitorInit();
 	}
-
 #elif (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
 	MonitorInit();
 #endif
@@ -99,122 +113,20 @@ int main(int argc, char *argv[])
 
 //Read commands from main program
 #if defined(PLATFORM_WIN)
-bool __fastcall ReadCommand(int argc, wchar_t* argv[])
+bool __fastcall ReadCommand(
+	int argc, 
+	wchar_t* argv[])
 #elif (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
-bool ReadCommand(int argc, char *argv[])
+bool ReadCommand(
+	int argc, 
+	char *argv[])
 #endif
 {
+//Path initialization
 #if defined(PLATFORM_WIN)
-//Winsock initialization
-	std::shared_ptr<WSAData> WSAInitialization(new WSAData());
-	if (WSAStartup(MAKEWORD(WINSOCK_VERSION_HIGH, WINSOCK_VERSION_LOW), WSAInitialization.get()) != 0 ||
-		LOBYTE(WSAInitialization->wVersion) != WINSOCK_VERSION_LOW || HIBYTE(WSAInitialization->wVersion) != WINSOCK_VERSION_HIGH)
-	{
-		wprintf_s(L"Winsock initialization error, error code is %d.\n", WSAGetLastError());
-
-		WSACleanup();
+	if (!FileNameInit(argv[0]))
 		return false;
-	}
-
-//Read commands.
-	if (argc == 2)
-	{
-	//Windows Firewall Test in first start.
-		if (wcsnlen_s(argv[1U], COMMAND_BUFFER_MAXSIZE) == wcslen(COMMAND_FIREWALL_TEST) && wcsncmp(argv[1U], COMMAND_FIREWALL_TEST, wcslen(COMMAND_FIREWALL_TEST)) == 0 && 
-			!FirewallTest(AF_INET6) && !FirewallTest(AF_INET))
-		{
-			wprintf_s(L"Windows Firewall Test error.\n");
-		}
-
-	//Flush DNS Cache from user.
-		else if (wcsnlen_s(argv[1U], COMMAND_BUFFER_MAXSIZE) == wcslen(COMMAND_FLUSH_DNS) && wcsncmp(argv[1U], COMMAND_FLUSH_DNS, wcslen(COMMAND_FLUSH_DNS)) == 0)
-		{
-			FlushDNSMailSlotSender();
-		}
-
-	//Print current version.
-		else if (wcsnlen_s(argv[1U], COMMAND_BUFFER_MAXSIZE) == wcslen(COMMAND_LONG_PRINT_VERSION) && wcsncmp(argv[1U], COMMAND_LONG_PRINT_VERSION, wcslen(COMMAND_LONG_PRINT_VERSION)) == 0 || 
-			wcsnlen_s(argv[1U], COMMAND_BUFFER_MAXSIZE) == wcslen(COMMAND_SHORT_PRINT_VERSION) && wcsncmp(argv[1U], COMMAND_SHORT_PRINT_VERSION, wcslen(COMMAND_SHORT_PRINT_VERSION)) == 0)
-		{
-			wprintf_s(L"Pcap_DNSProxy ");
-			wprintf_s(FULL_VERSION);
-			wprintf_s(L"\n");
-		}
-
-	//Print help messages.
-		else if (wcsnlen_s(argv[1U], COMMAND_BUFFER_MAXSIZE) == wcslen(COMMAND_LONG_HELP) && wcsncmp(argv[1U], COMMAND_LONG_HELP, wcslen(COMMAND_LONG_HELP)) == 0 ||
-			wcsnlen_s(argv[1U], COMMAND_BUFFER_MAXSIZE) == wcslen(COMMAND_SHORT_HELP) && wcsncmp(argv[1U], COMMAND_SHORT_HELP, wcslen(COMMAND_SHORT_HELP)) == 0)
-		{
-			wprintf_s(L"Usage: Please see ReadMe... files in Documents folder.\n");
-		}
-	}
-	else if (argc == 3)
-	{
-	//Set working directory from commands.
-		if (wcsnlen_s(argv[1U], COMMAND_BUFFER_MAXSIZE) == wcslen(COMMAND_LONG_SET_PATH) && wcsncmp(argv[1U], COMMAND_LONG_SET_PATH, wcslen(COMMAND_LONG_SET_PATH)) == 0 ||
-			wcsnlen_s(argv[1U], COMMAND_BUFFER_MAXSIZE) == wcslen(COMMAND_SHORT_SET_PATH) && wcsncmp(argv[1U], COMMAND_SHORT_SET_PATH, wcslen(COMMAND_SHORT_SET_PATH)) == 0)
-		{
-			if (wcsnlen_s(argv[2U], COMMAND_BUFFER_MAXSIZE) > MAX_PATH) //Check path limits.
-			{
-				wprintf_s(L"Path in command is too long.\n");
-				return false;
-			}
-			else {
-				return FileNameInit(argv[2U]);
-			}
-		}
-	}
-
-//Bad commands.
-	if (argc > 1)
-	{
-		WSACleanup();
-		return false;
-	}
-
-//Path initialization
-	return FileNameInit(argv[0]);
 #elif (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
-//Read commands.
-	if (argc == 2)
-	{
-	//Flush DNS Cache from user.
-		if (strnlen(argv[1U], COMMAND_BUFFER_MAXSIZE) == strlen(COMMAND_FLUSH_DNS) && memcmp(argv[1U], COMMAND_FLUSH_DNS, strlen(COMMAND_FLUSH_DNS)) == 0)
-		{
-			FlushDNSFIFOSender();
-		}
-
-	//Print current version.
-		else if (strnlen(argv[1U], COMMAND_BUFFER_MAXSIZE) == strlen(COMMAND_LONG_PRINT_VERSION) && memcmp(argv[1U], COMMAND_LONG_PRINT_VERSION, strlen(COMMAND_LONG_PRINT_VERSION)) == 0 || 
-			strnlen(argv[1U], COMMAND_BUFFER_MAXSIZE) == strlen(COMMAND_SHORT_PRINT_VERSION) && memcmp(argv[1U], COMMAND_SHORT_PRINT_VERSION, strlen(COMMAND_SHORT_PRINT_VERSION)) == 0)
-		{
-			wprintf(L"Pcap_DNSProxy ");
-			wprintf(FULL_VERSION);
-			wprintf(L"\n");
-		}
-	}
-	else if (argc == 3)
-	{
-	//Set working directory from commands.
-		if (strnlen(argv[1U], COMMAND_BUFFER_MAXSIZE) == strlen(COMMAND_LONG_SET_PATH) && memcmp(argv[1U], COMMAND_LONG_SET_PATH, strlen(COMMAND_LONG_SET_PATH)) == 0 ||
-			strnlen(argv[1U], COMMAND_BUFFER_MAXSIZE) == strlen(COMMAND_SHORT_SET_PATH) && memcmp(argv[1U], COMMAND_SHORT_SET_PATH, strlen(COMMAND_SHORT_SET_PATH)) == 0)
-		{
-			if (strnlen(argv[2U], COMMAND_BUFFER_MAXSIZE) > MAX_PATH) //Check path limits.
-			{
-				wprintf(L"Path in command is too long.\n");
-				return false;
-			}
-			else {
-				return FileNameInit(argv[2U]);
-			}
-		}
-	}
-
-//Bad commands.
-	if (argc > 1)
-		return false;
-
-//Path initialization
 	std::shared_ptr<char> FileName(new char[PATH_MAX + 1U]());
 	memset(FileName.get(), 0, PATH_MAX + 1U);
 	if (getcwd(FileName.get(), PATH_MAX) == nullptr)
@@ -224,15 +136,138 @@ bool ReadCommand(int argc, char *argv[])
 	}
 	if (!FileNameInit(FileName.get()))
 		return false;
+	FileName.reset();
+#endif
 
-	//Set system daemon.
-	#if defined(PLATFORM_LINUX)
-		if (daemon(0, 0) == RETURN_ERROR)
+#if defined(PLATFORM_WIN)
+//Winsock initialization
+	std::shared_ptr<WSAData> WSAInitialization(new WSAData());
+	if (WSAStartup(MAKEWORD(WINSOCK_VERSION_HIGH, WINSOCK_VERSION_LOW), WSAInitialization.get()) != EXIT_SUCCESS || 
+		LOBYTE(WSAInitialization->wVersion) != WINSOCK_VERSION_LOW || HIBYTE(WSAInitialization->wVersion) != WINSOCK_VERSION_HIGH)
+	{
+		wprintf_s(L"Winsock initialization error, error code is %d.\n", WSAGetLastError());
+		PrintError(LOG_ERROR_NETWORK, L"Winsock initialization error", WSAGetLastError(), nullptr, 0);
+
+		WSACleanup();
+		return false;
+	}
+
+//Read commands.
+	std::wstring Commands;
+#elif (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
+	std::string Commands;
+#endif
+	for (size_t Index = 1U;(SSIZE_T)Index < argc;++Index)
+	{
+		Commands = argv[Index];
+
+	//Flush DNS Cache from user.
+		if (Commands == COMMAND_FLUSH_DNS)
 		{
-			PrintError(LOG_ERROR_SYSTEM, L"Set system daemon error", 0, nullptr, 0);
+		#if defined(PLATFORM_WIN)
+			FlushDNSMailSlotSender();
+		#elif (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
+			FlushDNSFIFOSender();
+		#endif
+
+			WSACleanup();
+			return false;
+		}
+	//Windows Firewall Test in first start.
+	#if defined(PLATFORM_WIN)
+		else if (Commands == COMMAND_FIREWALL_TEST)
+		{
+			if (!FirewallTest(AF_INET6) && !FirewallTest(AF_INET))
+			{
+				wprintf_s(L"Windows Firewall Test error, error code is %d.\n", WSAGetLastError());
+				PrintError(LOG_ERROR_NETWORK, L"Windows Firewall Test error", WSAGetLastError(), nullptr, 0);
+			}
+
+			WSACleanup();
 			return false;
 		}
 	#endif
+	//Set system daemon.
+	#if defined(PLATFORM_LINUX)
+		else if (Commands == COMMAND_DISABLE_DAEMON)
+		{
+			GlobalRunningStatus.Daemon = false;
+		}
+	#endif
+	//Print current version.
+		else if (Commands == COMMAND_LONG_PRINT_VERSION || Commands == COMMAND_SHORT_PRINT_VERSION)
+		{
+			wprintf_s(L"Pcap_DNSProxy ");
+			wprintf_s(FULL_VERSION);
+			wprintf_s(L"\n");
+
+			WSACleanup();
+			return false;
+		}
+	//Print help messages.
+		else if (Commands == COMMAND_LONG_HELP || Commands == COMMAND_SHORT_HELP)
+		{
+			wprintf_s(L"Pcap_DNSProxy ");
+			wprintf_s(FULL_VERSION);
+		#if defined(PLATFORM_WIN)
+			wprintf_s(L"(Windows)\n");
+		#elif defined(PLATFORM_LINUX)
+			wprintf(L"(Linux)\n");
+		#elif defined(PLATFORM_MACX)
+			wprintf(L"(Mac)\n");
+		#endif
+			wprintf_s(COPYRIGHT_MESSAGE);
+			wprintf_s(L"\nUsage: Please see ReadMe... files in Documents folder.\n");
+			wprintf_s(L"   -v/--version:          Print current version on screen.\n");
+			wprintf_s(L"   -h/--help:             Print help messages on screen.\n");
+			wprintf_s(L"   --flush-dns:           Flush all DNS cache in program and system immediately.\n");
+			wprintf_s(L"   --first-setup:         Test local firewall(Windows).\n");
+			wprintf_s(L"   -c/--config-file Path: Set path of configuration file.\n");
+			wprintf_s(L"   --disable-daemon:      Disable daemon mode(Linux).\n");
+
+			WSACleanup();
+			return false;
+		}
+	//Set working directory from commands.
+		else if (Commands == COMMAND_LONG_SET_PATH || Commands == COMMAND_SHORT_SET_PATH)
+		{
+		//Commands check
+			if ((SSIZE_T)Index + 1 >= argc)
+			{
+				wprintf_s(L"Commands error.\n");
+				PrintError(LOG_ERROR_SYSTEM, L"Commands error", 0, nullptr, 0);
+
+				WSACleanup();
+				return false;
+			}
+			else {
+				++Index;
+				Commands = argv[Index];
+
+			//Path check.
+				if (Commands.length() > MAX_PATH)
+				{
+					wprintf_s(L"Commands error.\n");
+					PrintError(LOG_ERROR_SYSTEM, L"Commands error", 0, nullptr, 0);
+
+					WSACleanup();
+					return false;
+				}
+				else {
+					if (!FileNameInit(Commands.c_str()))
+						return false;
+				}
+			}
+		}
+	}
+
+//Set system daemon.
+#if defined(PLATFORM_LINUX)
+	if (GlobalRunningStatus.Daemon && daemon(0, 0) == RETURN_ERROR)
+	{
+		PrintError(LOG_ERROR_SYSTEM, L"Set system daemon error", 0, nullptr, 0);
+		return false;
+	}
 #endif
 
 	return true;
@@ -240,49 +275,58 @@ bool ReadCommand(int argc, char *argv[])
 
 //Get path of program from the main function parameter and Winsock initialization
 #if defined(PLATFORM_WIN)
-bool __fastcall FileNameInit(const wchar_t *OriginalPath)
+bool __fastcall FileNameInit(
+	const wchar_t *OriginalPath)
 #elif (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
-bool FileNameInit(const char *OriginalPath)
+bool FileNameInit(
+	const char *OriginalPath)
 #endif
 {
 //Path process
 #if defined(PLATFORM_WIN)
-	Parameter.Path_Global->push_back(OriginalPath);
-	Parameter.Path_Global->front().erase(Parameter.Path_Global->front().rfind(L"\\") + 1U);
-	for (size_t Index = 0;Index < Parameter.Path_Global->front().length();++Index)
+	GlobalRunningStatus.Path_Global->clear();
+	GlobalRunningStatus.Path_Global->push_back(OriginalPath);
+	GlobalRunningStatus.Path_Global->front().erase(GlobalRunningStatus.Path_Global->front().rfind(L"\\") + 1U);
+	for (size_t Index = 0;Index < GlobalRunningStatus.Path_Global->front().length();++Index)
 	{
-		if ((Parameter.Path_Global->front()).at(Index) == L'\\')
+		if ((GlobalRunningStatus.Path_Global->front()).at(Index) == L'\\')
 		{
-			Parameter.Path_Global->front().insert(Index, L"\\");
+			GlobalRunningStatus.Path_Global->front().insert(Index, L"\\");
 			++Index;
 		}
 	}
 #elif (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
-	Parameter.sPath_Global->push_back(OriginalPath);
-	Parameter.sPath_Global->front().append("/");
+	GlobalRunningStatus.sPath_Global->clear();
+	GlobalRunningStatus.sPath_Global->push_back(OriginalPath);
+	GlobalRunningStatus.sPath_Global->front().append("/");
 	std::wstring StringTemp;
-	MBSToWCSString(StringTemp, OriginalPath);
+	if (!MBSToWCSString(StringTemp, OriginalPath, PATH_MAX + 1U))
+		return false;
 	StringTemp.append(L"/");
-	Parameter.Path_Global->push_back(StringTemp);
+	GlobalRunningStatus.Path_Global->clear();
+	GlobalRunningStatus.Path_Global->push_back(StringTemp);
 	StringTemp.clear();
 #endif
 
 //Get path of error/running status log file and mark start time.
-	*Parameter.Path_ErrorLog = Parameter.Path_Global->front();
-	Parameter.Path_ErrorLog->append(L"Error.log");
+	GlobalRunningStatus.Path_ErrorLog->clear();
+	*GlobalRunningStatus.Path_ErrorLog = GlobalRunningStatus.Path_Global->front();
+	GlobalRunningStatus.Path_ErrorLog->append(L"Error.log");
 #if (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
-	*Parameter.sPath_ErrorLog = Parameter.sPath_Global->front();
-	Parameter.sPath_ErrorLog->append("Error.log");
+	GlobalRunningStatus.sPath_ErrorLog->clear();
+	*GlobalRunningStatus.sPath_ErrorLog = GlobalRunningStatus.sPath_Global->front();
+	GlobalRunningStatus.sPath_ErrorLog->append("Error.log");
 #endif
 	Parameter.PrintError = true;
-	time(&StartTime);
+	GlobalRunningStatus.StartupTime = time(nullptr);
 
 	return true;
 }
 
 #if defined(PLATFORM_WIN)
 //Windows Firewall Test
-bool __fastcall FirewallTest(const uint16_t Protocol)
+bool __fastcall FirewallTest(
+	const uint16_t Protocol)
 {
 //Initialization
 	std::shared_ptr<sockaddr_storage> SockAddr(new sockaddr_storage());
@@ -296,24 +340,24 @@ bool __fastcall FirewallTest(const uint16_t Protocol)
 	if (Protocol == AF_INET6)
 	{
 		((PSOCKADDR_IN6)SockAddr.get())->sin6_addr = in6addr_any;
-		((PSOCKADDR_IN6)SockAddr.get())->sin6_port = htons((uint16_t)RamdomDistribution(*Parameter.RamdomEngine));
+		((PSOCKADDR_IN6)SockAddr.get())->sin6_port = htons((uint16_t)RamdomDistribution(*GlobalRunningStatus.RamdomEngine));
 		SockAddr->ss_family = AF_INET6;
 		FirewallSocket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
 	//Bind local socket.
-		if (FirewallSocket == INVALID_SOCKET)
+		if (!SocketSetting(FirewallSocket, SOCKET_SETTING_INVALID_CHECK, nullptr))
 		{
 			return false;
 		}
 		else if (bind(FirewallSocket, (PSOCKADDR)SockAddr.get(), sizeof(sockaddr_in6)) == SOCKET_ERROR)
 		{
-			((PSOCKADDR_IN6)SockAddr.get())->sin6_port = htons((uint16_t)RamdomDistribution(*Parameter.RamdomEngine));
+			((PSOCKADDR_IN6)SockAddr.get())->sin6_port = htons((uint16_t)RamdomDistribution(*GlobalRunningStatus.RamdomEngine));
 			size_t Index = 0;
 			while (bind(FirewallSocket, (PSOCKADDR)SockAddr.get(), sizeof(sockaddr_in6)) == SOCKET_ERROR)
 			{
 				if (Index < LOOP_MAX_TIMES && WSAGetLastError() == WSAEADDRINUSE)
 				{
-					((PSOCKADDR_IN6)SockAddr.get())->sin6_port = htons((uint16_t)RamdomDistribution(*Parameter.RamdomEngine));
+					((PSOCKADDR_IN6)SockAddr.get())->sin6_port = htons((uint16_t)RamdomDistribution(*GlobalRunningStatus.RamdomEngine));
 
 					++Index;
 					continue;
@@ -328,24 +372,24 @@ bool __fastcall FirewallTest(const uint16_t Protocol)
 //IPv4
 	else {
 		((PSOCKADDR_IN)SockAddr.get())->sin_addr.s_addr = INADDR_ANY;
-		((PSOCKADDR_IN)SockAddr.get())->sin_port = htons((uint16_t)RamdomDistribution(*Parameter.RamdomEngine));
+		((PSOCKADDR_IN)SockAddr.get())->sin_port = htons((uint16_t)RamdomDistribution(*GlobalRunningStatus.RamdomEngine));
 		SockAddr->ss_family = AF_INET;
 		FirewallSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 	//Bind local socket.
-		if (FirewallSocket == INVALID_SOCKET)
+		if (!SocketSetting(FirewallSocket, SOCKET_SETTING_INVALID_CHECK, nullptr))
 		{
 			return false;
 		}
 		else if (bind(FirewallSocket, (PSOCKADDR)SockAddr.get(), sizeof(sockaddr_in)) == SOCKET_ERROR)
 		{
-			((PSOCKADDR_IN)SockAddr.get())->sin_port = htons((uint16_t)RamdomDistribution(*Parameter.RamdomEngine));
+			((PSOCKADDR_IN)SockAddr.get())->sin_port = htons((uint16_t)RamdomDistribution(*GlobalRunningStatus.RamdomEngine));
 			size_t Index = 0;
 			while (bind(FirewallSocket, (PSOCKADDR)SockAddr.get(), sizeof(sockaddr_in)) == SOCKET_ERROR)
 			{
 				if (Index < LOOP_MAX_TIMES && WSAGetLastError() == WSAEADDRINUSE)
 				{
-					((PSOCKADDR_IN)SockAddr.get())->sin_port = htons((uint16_t)RamdomDistribution(*Parameter.RamdomEngine));
+					((PSOCKADDR_IN)SockAddr.get())->sin_port = htons((uint16_t)RamdomDistribution(*GlobalRunningStatus.RamdomEngine));
 
 					++Index;
 					continue;

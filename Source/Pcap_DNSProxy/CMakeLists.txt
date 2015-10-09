@@ -18,7 +18,11 @@
 
 
 # CMake minimum version
-cmake_minimum_required(VERSION 3.0.2)
+IF(PLATFORM_OPENWRT)
+	cmake_minimum_required(VERSION 2.8.12.2)
+ELSE(PLATFORM_OPENWRT)
+	cmake_minimum_required(VERSION 3.0.2)
+ENDIF(PLATFORM_OPENWRT)
 
 # Project name
 project(Pcap_DNSProxy)
@@ -27,7 +31,9 @@ project(Pcap_DNSProxy)
 set(CMAKE_BUILD_TYPE "Release")
 
 # All source files
-set(MAIN_SRC_FILES 
+set(MAIN_SRC_FILES
+		"Platform.h"
+		"Structures.h"
 		"Base.h"
 		"Capture.h"
 		"Configuration.h"
@@ -41,6 +47,7 @@ set(MAIN_SRC_FILES
 		"Process.h"
 		"Protocol.h"
 		"Service.h"
+		"Proxy.h"
 		"Base.cpp"
 		"Capture.cpp"
 		"Configuration.cpp"
@@ -53,13 +60,19 @@ set(MAIN_SRC_FILES
 		"PrintLog.cpp"
 		"Process.cpp"
 		"Protocol.cpp"
+		"Proxy.cpp"
 		"ReadHosts.cpp"
 		"ReadIPFilter.cpp"
 		"ReadParameter.cpp"
 		"Service.cpp")
 
 # Compiling and linking flags
-add_definitions(-std=c++11 -fpic)
+IF(PLATFORM_OPENWRT)
+	add_definitions(-std=c++11)
+	add_definitions(-DPLATFORM_OPENWRT)
+ELSE(PLATFORM_OPENWRT)
+	add_definitions(-std=c++11 -fpic)
+ENDIF(PLATFORM_OPENWRT)
 IF(ENABLE_PCAP)
 	add_definitions(-DENABLE_PCAP)
 ENDIF(ENABLE_PCAP)
@@ -69,8 +82,11 @@ ENDIF(ENABLE_LIBSODIUM)
 
 # Executable file name
 add_executable(Pcap_DNSProxy ${MAIN_SRC_FILES})
+IF(PLATFORM_OPENWRT)
+	INSTALL(TARGETS Pcap_DNSProxy RUNTIME DESTINATION sbin)
+ENDIF(PLATFORM_OPENWRT)
 
-# Static libraries
+# Libraries linking
 target_link_libraries(Pcap_DNSProxy pthread)
 IF(ENABLE_PCAP)
 	target_link_libraries(Pcap_DNSProxy pcap)

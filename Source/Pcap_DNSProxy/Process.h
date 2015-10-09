@@ -21,22 +21,59 @@
 
 //Global variables
 extern CONFIGURATION_TABLE Parameter;
+extern GLOBAL_STATUS GlobalRunningStatus;
 #if defined(ENABLE_LIBSODIUM)
-	extern DNSCURVE_CONFIGURATON_TABLE DNSCurveParameter;
+	extern DNSCURVE_CONFIGURATION_TABLE DNSCurveParameter;
 #endif
 extern std::vector<DIFFERNET_HOSTS_FILE_SET> *HostsFileSetUsing, *HostsFileSetModificating;
 extern std::deque<DNSCACHE_DATA> DNSCacheList;
-extern std::mutex LocalAddressLock[NETWORK_LAYER_PARTNUM], HostsListLock, DNSCacheListLock;
+extern std::mutex LocalAddressLock[NETWORK_LAYER_PARTNUM], HostsFileLock, DNSCacheListLock;
 
 //Functions
-size_t __fastcall CheckHosts(PSTR OriginalRequest, const size_t Length, PSTR Result, const size_t ResultSize);
-bool __fastcall LocalRequestProcess(const char *OriginalSend, const size_t SendSize, PSTR OriginalRecv, const uint16_t Protocol, const SOCKET_DATA &LocalSocketData);
-bool __fastcall DirectRequestProcess(const char *OriginalSend, const size_t SendSize, PSTR OriginalRecv, const uint16_t Protocol, const SOCKET_DATA &LocalSocketData);
+bool __fastcall LocalRequestProcess(
+	const char *OriginalSend, 
+	const size_t SendSize, 
+	PSTR OriginalRecv, 
+	const size_t RecvSize, 
+	const uint16_t Protocol, 
+	const SOCKET_DATA &LocalSocketData);
+bool __fastcall SOCKSRequestProcess(
+	const char *OriginalSend, 
+	const size_t SendSize, 
+	PSTR OriginalRecv, 
+	const size_t RecvSize, 
+	const uint16_t Protocol, 
+	const SOCKET_DATA &LocalSocketData);
+bool __fastcall DirectRequestProcess(
+	const char *OriginalSend, 
+	const size_t SendSize, 
+	PSTR OriginalRecv, 
+	const size_t RecvSize, 
+	const uint16_t Protocol, 
+	const bool DirectRequest, 
+	const SOCKET_DATA &LocalSocketData);
 #if defined(ENABLE_LIBSODIUM)
-	bool __fastcall DNSCurveRequestProcess(const char *OriginalSend, const size_t SendSize, PSTR OriginalRecv, const uint16_t Protocol, const SOCKET_DATA &LocalSocketData);
+bool __fastcall DNSCurveRequestProcess(
+	const char *OriginalSend, 
+	const size_t SendSize, 
+	PSTR OriginalRecv, 
+	const size_t RecvSize, 
+	const uint16_t Protocol, 
+	const SOCKET_DATA &LocalSocketData);
 #endif
-bool __fastcall TCPRequestProcess(const char *OriginalSend, const size_t SendSize, PSTR OriginalRecv, const uint16_t Protocol, const SOCKET_DATA &LocalSocketData);
+bool __fastcall TCPRequestProcess(
+	const char *OriginalSend, 
+	const size_t SendSize, 
+	PSTR OriginalRecv, 
+	const size_t RecvSize, 
+	const uint16_t Protocol, 
+	const SOCKET_DATA &LocalSocketData);
 #if defined(ENABLE_PCAP)
-	void __fastcall UDPRequestProcess(const char *OriginalSend, const size_t SendSize, const SOCKET_DATA &LocalSocketData, const uint16_t Protocol);
+void __fastcall UDPRequestProcess(
+	const char *OriginalSend, 
+	const size_t SendSize, 
+	const SOCKET_DATA &LocalSocketData, 
+	const uint16_t Protocol);
 #endif
-bool __fastcall SendToRequester(PSTR RecvBuffer, const size_t RecvSize, const uint16_t Protocol, const SOCKET_DATA &LocalSocketData);
+uint16_t __fastcall SelectNetworkProtocol(
+	void);

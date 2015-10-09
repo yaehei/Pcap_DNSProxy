@@ -21,20 +21,30 @@
 
 //Global variables
 extern CONFIGURATION_TABLE Parameter;
+extern GLOBAL_STATUS GlobalRunningStatus;
 extern ALTERNATE_SWAP_TABLE AlternateSwapList;
 #if defined(ENABLE_LIBSODIUM)
-	extern DNSCURVE_CONFIGURATON_TABLE DNSCurveParameter;
+	extern DNSCURVE_CONFIGURATION_TABLE DNSCurveParameter;
 #endif
 extern std::mutex LocalAddressLock[NETWORK_LAYER_PARTNUM];
 
 //Functions
-bool __fastcall UDPMonitor(const SOCKET_DATA LocalSocketData);
-bool __fastcall TCPMonitor(const SOCKET_DATA LocalSocketData);
-bool __fastcall TCPReceiveProcess(const SOCKET_DATA LocalSocketData);
-void __fastcall AlternateServerMonitor(void);
+bool __fastcall UDPMonitor(
+	const SOCKET_DATA LocalSocketData);
+bool __fastcall TCPMonitor(
+	const SOCKET_DATA LocalSocketData);
+bool __fastcall TCPReceiveProcess(
+	const SOCKET_DATA LocalSocketData);
+void __fastcall AlternateServerMonitor(
+	void);
 #if defined(PLATFORM_WIN)
-	PADDRINFOA __fastcall GetLocalAddressList(const uint16_t Protocol);
+PADDRINFOA __fastcall GetLocalAddressList(
+	const uint16_t Protocol, 
+	PSTR HostName);
 #elif (defined(PLATFORM_LINUX) || defined(PLATFORM_MACX))
-	bool GetBestInterfaceAddress(const uint16_t Protocol, const sockaddr_storage *OriginalSockAddr);
+bool GetBestInterfaceAddress(
+	const uint16_t Protocol, 
+	const sockaddr_storage *OriginalSockAddr);
 #endif
-void __fastcall GetGatewayInformation(const uint16_t Protocol);
+void __fastcall GetGatewayInformation(
+	const uint16_t Protocol);
